@@ -103,7 +103,7 @@ void Board::transfer() {
     next_map = temp;
 }
 
-void Board::update() {#
+void Board::update() {
     // game rules are encoded here
     for (int r = 0; r < board_rows; r++) {
         for (int c = 0; c < board_cols; c++) {
