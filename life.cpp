@@ -1,5 +1,4 @@
 #include <iostream>
-#include <string>
 #include <cassert>
 #include <unordered_map>
 #include <chrono>
@@ -12,6 +11,8 @@ class Board{
 public:
     int board_rows;
     int board_cols;
+
+    // double buffered map representation:
     boardmap map1;
     boardmap map2;
 
@@ -21,23 +22,24 @@ public:
     Board(int rows, int cols);
     void display();
     void update();
+    void transfer();
     void play(int rate);
 
-    int neighbours(int row, int col);
     int index(int row, int col);
-
+    int neighbours(int row, int col);
     bool get(int row, int col);
     void set(int row, int col, bool state);
-    void transfer();
 };
 
 Board::Board(int rows, int cols) {
     board_rows = rows;
     board_cols = cols;
 
+    // pointers to map states:
     cur_map = &map1;
     next_map = &map2;
 
+    // initialise empty board:
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
             set(i,j,false);
@@ -56,22 +58,23 @@ bool Board::get(int row, int col) {
     // check if board is defined here:
     if (row >= 0 && row < board_rows) 
         if (col >= 0 && col < board_cols) 
+            // return value of board here:
             return (*cur_map)[index(row, col)];
     return false;
 }
 
 void Board::set(int row, int col, bool state) {
-    // check if board is defined here
+    // throw error if attempting to set outside board region:
     assert (row >= 0 && row < board_rows);
     assert (col >= 0 && col < board_cols);
+    // set board value here to desired state:
     (*next_map)[index(row, col)] = state;
-    
-    return;
 }
 
 int Board::neighbours(int row, int col) {
     int n = get(row,col) ? -1 : 0; // account for centre coordinate value 
 
+    // accumulate number of neighbours in region around center
     for (int r = row-1; r <= row+1; r++) {
         for (int c = col-1; c <= col+1; c++) {
             if (get(r, c)) 
@@ -82,6 +85,8 @@ int Board::neighbours(int row, int col) {
 }
 
 void Board::display() {
+    // print one character at a time
+    // (c++ has buffered terminal output)
     for (int r = 0; r < board_rows; r++) {
         for (int c = 0; c < board_cols; c++) {
             cout << (get(r,c) ? '#' : ' ');
@@ -98,25 +103,26 @@ void Board::transfer() {
     next_map = temp;
 }
 
-void Board::update() {
+void Board::update() {#
+    // game rules are encoded here
     for (int r = 0; r < board_rows; r++) {
         for (int c = 0; c < board_cols; c++) {
             int n = neighbours(r, c);
-            if (get(r,c)) { // alive
-                if ((n > 1) && (n < 4)) { // too few or too many neighbours
-                    set(r,c, true);
+            if (get(r,c)) { // if alive
+                if ((n > 1) && (n < 4)) { 
+                    set(r,c, true); // stay alive
                 }
                 else {
-                    set(r,c, false);
+                    set(r,c, false); // starving or overcrowded
                 }
             }
 
-            else {
+            else { // if dead
                 if (n == 3) { // exactly 3 neighbours
-                    set(r,c, true);
+                    set(r,c, true); // grow
                 }
                 else {
-                    set(r,c, false);
+                    set(r,c, false); // stay dead
                 }
             }
             
@@ -137,11 +143,12 @@ void Board::play(int rate) {
 
 int main() {
 
+    // initialise board with parameters:
     int num_rows = 30;
     int num_cols = 50;
     Board board(num_rows, num_cols);
 
-    // acorn:
+    // add acorn to board:
     board.set(10,10,true);
     board.set(12,9,true);
     board.set(12,10,true);
@@ -149,11 +156,10 @@ int main() {
     board.set(12,13,true);
     board.set(12,14,true);
     board.set(12,15,true);
-    
+
+    // bake board state into current map:
     board.transfer();
 
-    board.display();
-    board.update();
-    board.display();
+    // run game:
     board.play(10);
 }
